@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-light: #f8fafc;
+    --bg-dark: #020617;
+  }
+
+  /* Force transitions */
+  html,
+  body {
+    @apply transition-colors duration-300;
+  }
+
+  body {
+    background-color: var(--bg-light);
+    @apply text-slate-900;
+  }
+
+  /* Force dark mode background when class is present on HTML */
+  html.dark body {
+    background-color: var(--bg-dark) !important;
+    @apply text-slate-50;
+  }
+
+  /* Specific class for body if applied there */
+  body.dark {
+    background-color: var(--bg-dark) !important;
+    @apply text-slate-50;
+  }
+}
+
+/* Global utility for dark background */
+.dark-base {
+  @apply bg-slate-950 text-white;
+}
+
+.glass {
+  @apply bg-white/70 backdrop-blur-md border border-white/20;
+}
+
+.dark .glass {
+  @apply bg-slate-900/60 border-slate-700/50;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full transition-colors;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  @apply bg-slate-800;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-300;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-700;
+}
