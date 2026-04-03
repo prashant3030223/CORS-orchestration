@@ -5,7 +5,6 @@ const Notification = require('../models/Notification');
 const { getMockDashboardStats } = require('../utils/mockDb');
 
 exports.getDashboardStats = async (req, res) => {
-    // Connection check: Strictly allow only if connected (state 1)
     if (mongoose.connection.readyState !== 1) {
         console.log('💡 DB Offline: Serving Mock Dashboard Data');
         return res.json(getMockDashboardStats());
@@ -17,8 +16,6 @@ exports.getDashboardStats = async (req, res) => {
         const totalRequests = await Log.countDocuments(query);
         const allowedRequests = await Log.countDocuments({ ...query, status: 'Allowed' });
         const blockedRequests = await Log.countDocuments({ ...query, status: { $ne: 'Allowed' } });
-
-        // 1. Policy Distribution Data
         const policyStats = await Log.aggregate([
             {
                 $match: query
@@ -41,15 +38,11 @@ exports.getDashboardStats = async (req, res) => {
             if (policyDistribution.hasOwnProperty(stat._id)) {
                 policyDistribution[stat._id] = stat.count;
             } else {
-                // Map unexpected statuses to Blocked or keep separate if needed
-                // For this schema, values are fixed enum, but good to be safe
                 policyDistribution.Blocked += stat.count;
             }
         });
-
-        // 2. Global Traffic Curve (Last 7 Days)
         const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // Include today
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); 
         sevenDaysAgo.setHours(0, 0, 0, 0);
 
         const trafficAggregation = await Log.aggregate([
@@ -68,7 +61,6 @@ exports.getDashboardStats = async (req, res) => {
             { $sort: { _id: 1 } }
         ]);
 
-        // Fill missing days
         const trafficData = {
             labels: [],
             data: []
@@ -106,7 +98,6 @@ exports.getDashboardStats = async (req, res) => {
 };
 
 exports.getAnalyticsData = async (req, res) => {
-    // Connection check
     if (mongoose.connection.readyState !== 1) {
         return res.json({
             originStats: [],
@@ -118,7 +109,6 @@ exports.getAnalyticsData = async (req, res) => {
 
     try {
         const query = { organization: req.user.organization };
-        // Aggregate RPM (Requests per minute for the last 24 hours - simplified to per hour for charting)
         const rpmAggregation = await Log.aggregate([
             {
                 $match: {
@@ -135,13 +125,11 @@ exports.getAnalyticsData = async (req, res) => {
             { $sort: { "_id": 1 } }
         ]);
 
-        // Map aggregation to 24h format
         const rpmData = Array(24).fill(0);
         rpmAggregation.forEach(item => {
             rpmData[item._id] = item.count;
         });
 
-        // Aggregate Top Origins
         const originStats = await Log.aggregate([
             { $match: query },
             { $group: { _id: "$origin", count: { $sum: 1 } } },
@@ -149,7 +137,6 @@ exports.getAnalyticsData = async (req, res) => {
             { $limit: 5 }
         ]);
 
-        // Summary Metrics
         const totalLogs = await Log.countDocuments(query);
         const blockedLogs = await Log.countDocuments({ ...query, status: { $ne: 'Allowed' } });
         const distinctOrigins = await Log.distinct('origin', query);
