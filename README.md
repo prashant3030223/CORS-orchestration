@@ -24,12 +24,26 @@ The repository is structured as a monorepo containing three main components:
 - **`/backend`**: The core orchestration service and WebSocket server that stores and distributes CORS policies (Node.js, Express, MongoDB, Socket.io).
 - **`/user-data-api`**: A sample/target API implementation demonstrating how to consume and enforce the dynamic CORS policies.
 
+## 🔄 Data Flow
+- Admin updates CORS rules via dashboard
+- Backend validates and stores rules in MongoDB
+- Backend emits updates using Socket.io
+- Subscribed APIs receive updated policies
+- Middleware enforces updated CORS rules instantly
+
 ## 🚀 Tech Stack
 
 - **Frontend**: React 19, Vite, Tailwind CSS, Framer Motion, Axios.
 - **Backend / API Services**: Node.js, Express, Socket.io, JsonWebToken.
 - **Database**: MongoDB (Mongoose).
 - **Tooling**: ESLint, Nodemon.
+
+## 🔐 Policy Structure Example
+<!-- {
+  "origin": ["https://example.com", "https://admin.com"],
+  "methods": ["GET", "POST", "PUT"],
+  "headers": ["Content-Type", "Authorization"]
+} -->
 
 ## 🛠️ Installation & Setup
 
