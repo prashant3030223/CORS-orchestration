@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+// MongoDB schema for logs - contribution by Piyus
 const logSchema = new mongoose.Schema({
     organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: false, index: true },
     timestamp: { type: Date, default: Date.now, index: true },
