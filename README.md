@@ -101,4 +101,4 @@ This application uses JWT for authentication and securely hashes passwords. The 
 
 ## 📄 License
 
-This project is open-source and available under the ISC License.
+This project is open-source and available under the ISC License
