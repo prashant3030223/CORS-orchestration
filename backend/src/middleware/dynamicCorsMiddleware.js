@@ -6,21 +6,30 @@ const Notification = require('../models/Notification');
 const dynamicCorsMiddleware = async (req, res, next) => {
     const origin = req.headers.origin;
     const isInternalApi = req.path.startsWith('/api');
-    const isDashboard = origin === process.env.CLIENT_URL;
 
-    // 1. Allow non-browser requests (no origin) - optional, strictly secure systems might block this.
+    // 1. Allow non-browser requests (no origin)
     if (!origin) {
         return next();
     }
 
-    // MANDATORY: Always allow the Dashboard URL to ensure management is possible even if DB is empty
-    const allowedOrigins = [process.env.CLIENT_URL, 'https://cors-orchestration.vercel.app', 'http://localhost:5173'];
-    if (allowedOrigins.some(url => url && (origin === url || origin.replace(/\/$/, '') === url.replace(/\/$/, '')))) {
+    // MANDATORY: Always allow production URLs (Netlify, Vercel, and Local)
+    const normalizedOrigin = (origin || '').replace(/\/$/, '');
+    const isAllowed = 
+        (process.env.CLIENT_URL && process.env.CLIENT_URL.replace(/\/$/, '') === normalizedOrigin) ||
+        normalizedOrigin === 'https://cors-orchestration.netlify.app' ||
+        normalizedOrigin === 'https://cors-orchestration.vercel.app' ||
+        normalizedOrigin === 'http://localhost:5173' ||
+        normalizedOrigin.endsWith('.netlify.app') ||
+        normalizedOrigin.endsWith('.vercel.app');
+
+    if (isAllowed) {
         res.header('Access-Control-Allow-Origin', origin);
         res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, x-org-id');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, x-org-id, Accept, Origin, X-Requested-With');
         res.header('Access-Control-Allow-Credentials', 'true');
-        if (req.method === 'OPTIONS') return res.status(200).end();
+        if (req.method === 'OPTIONS') {
+            return res.status(204).send();
+        }
         return next();
     }
 
@@ -46,7 +55,7 @@ const dynamicCorsMiddleware = async (req, res, next) => {
         const normalizeOrigin = (url) => url ? url.replace(/\/$/, '') : '';
         const normOrigin = normalizeOrigin(origin);
 
-        // 1. GLOBAL BLACKLIST CHECK (Highest Priority)
+        // 1. GLOBAL BLACKLIST CHECK
         const isBlacklistedGlobally = policies.some(policy =>
             policy.blacklistedOrigins && policy.blacklistedOrigins.some(blocked => {
                 const normBlocked = normalizeOrigin(blocked);
@@ -67,17 +76,7 @@ const dynamicCorsMiddleware = async (req, res, next) => {
             return res.status(403).json({ error: 'CORS Blocked: Origin is blacklisted' });
         }
 
-        // 2. MANDATORY DASHBOARD ALLOW (Fallback/Safe Default)
-        if (process.env.CLIENT_URL && (normOrigin === normalizeOrigin(process.env.CLIENT_URL))) {
-            res.header('Access-Control-Allow-Origin', origin);
-            res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-            res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key');
-            res.header('Access-Control-Allow-Credentials', 'true');
-            if (req.method === 'OPTIONS') return res.status(200).end();
-            return next();
-        }
-
-        // 3. Find a matching Allow Policy (Standard Flow)
+        // 2. Find a matching Allow Policy
         const matchedPolicy = policies.find(policy => {
             return policy.allowedOrigins.some(allowed => {
                 const normAllowed = normalizeOrigin(allowed);
@@ -95,21 +94,18 @@ const dynamicCorsMiddleware = async (req, res, next) => {
 
         if (matchedPolicy) {
             res.header('Access-Control-Allow-Origin', origin);
-
-            // Handle Wildcard Methods
             const methods = (matchedPolicy.allowedMethods && matchedPolicy.allowedMethods.length > 0)
                 ? (matchedPolicy.allowedMethods.includes('*') ? 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD' : matchedPolicy.allowedMethods.join(', '))
                 : 'GET, POST';
             res.header('Access-Control-Allow-Methods', methods);
 
-            // Handle Headers - provide defaults if empty
             const headers = (matchedPolicy.allowedHeaders && matchedPolicy.allowedHeaders.length > 0)
                 ? matchedPolicy.allowedHeaders.join(', ')
                 : 'Content-Type, Authorization, x-api-key';
             res.header('Access-Control-Allow-Headers', headers);
 
             if (matchedPolicy.allowCredentials) res.header('Access-Control-Allow-Credentials', 'true');
-            if (req.method === 'OPTIONS') return res.status(200).end();
+            if (req.method === 'OPTIONS') return res.status(204).send();
 
             // Log Access
             if (!isInternalApi || (origin !== process.env.CLIENT_URL)) {
@@ -141,7 +137,6 @@ const dynamicCorsMiddleware = async (req, res, next) => {
                     if (req.io) req.io.to(potentialOrg.toString()).emit('log_received', newLog);
                 }).catch(err => console.error('Blocked log failed', err));
 
-                // Create persistent Security Alert Notification
                 Notification.create({
                     organization: potentialOrg,
                     type: 'security',
@@ -162,4 +157,3 @@ const dynamicCorsMiddleware = async (req, res, next) => {
 };
 
 module.exports = dynamicCorsMiddleware;
- 
