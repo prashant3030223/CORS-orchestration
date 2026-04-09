@@ -22,7 +22,7 @@ exports.getPolicyByApiId = async (req, res) => {
 
 exports.updatePolicy = async (req, res) => {
     try {
-        const { apiId, allowedOrigins, blacklistedOrigins, allowedMethods, allowCredentials, isDeploying } = req.body;
+        const { apiId, allowedOrigins, blacklistedOrigins, allowedMethods, allowedHeaders, allowCredentials, isDeploying } = req.body;
 
         if (!apiId) return res.status(400).json({ message: 'apiId is required' });
 
@@ -51,6 +51,7 @@ exports.updatePolicy = async (req, res) => {
                 allowedOrigins: allowedOrigins || [],
                 blacklistedOrigins: blacklistedOrigins || [],
                 allowedMethods: allowedMethods || ['GET', 'POST'],
+                allowedHeaders: allowedHeaders || ['Content-Type', 'Authorization', 'x-api-key'],
                 allowCredentials: !!allowCredentials,
                 isActive: true
             },
