@@ -1,6 +1,7 @@
 const CorsPolicy = require('../models/CorsPolicy');
 const Log = require('../models/Log');
 const Api = require('../models/Api');
+const User = require('../models/User');
 
 exports.getPolicyByApiId = async (req, res) => {
     try {
@@ -28,11 +29,21 @@ exports.updatePolicy = async (req, res) => {
         // Fetch API - handle cases where API discovery hasn't fully synced
         const api = await Api.findById(apiId);
         const apiName = api ? api.name : 'Unknown API';
-        const orgId = req.user ? req.user.organization : (api ? api.organization : null);
+        
+        // Super Robust Organization Fallback
+        let orgId = req.user?.organization || api?.organization;
+        if (!orgId && req.user?.id) {
+            const user = await User.findById(req.user.id);
+            orgId = user?.organization;
+        }
+
+        if (!orgId) {
+            return res.status(400).json({ message: 'Authentication Error: Organization context missing. Please re-login.' });
+        }
 
         // Upsert policy
         const policy = await CorsPolicy.findOneAndUpdate(
-            { apiId }, // Search by API ID
+            { apiId }, 
             {
                 organization: orgId,
                 apiId,
@@ -67,6 +78,6 @@ exports.updatePolicy = async (req, res) => {
         res.json(policy);
     } catch (err) {
         console.error('Update Policy Error:', err);
-        res.status(400).json({ message: err.message });
+        res.status(400).json({ message: `Database Error: ${err.message}` });
     }
 };
