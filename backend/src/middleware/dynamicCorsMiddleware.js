@@ -73,6 +73,28 @@ const dynamicCorsMiddleware = async (req, res, next) => {
 
         if (isBlacklistedGlobally) {
             console.log(`🚫 CORS Blocked (Blacklisted) for origin: ${origin}`);
+            const potentialOrg = policies.find(p => p.blacklistedOrigins.some(b => normalizeOrigin(b) === normOrigin || (normalizeOrigin(b).startsWith('*.') && origin.endsWith(normalizeOrigin(b).slice(2)))))?.organization || (policies.length > 0 ? policies[0].organization : null);
+            
+            if (potentialOrg) {
+                Log.create({
+                    organization: potentialOrg,
+                    eventType: 'Security Alert',
+                    apiEndpoint: req.path,
+                    origin: origin,
+                    method: req.method,
+                    status: 'Blocked',
+                    severity: 'High',
+                    details: 'Origin is explicitly blacklisted in security policy.'
+                }).catch(err => console.error('Blacklist log failed', err));
+
+                Notification.create({
+                    organization: potentialOrg,
+                    type: 'security',
+                    title: 'Blacklisted Origin Blocked',
+                    message: `A known malicious origin (${origin}) attempted to access your API and was blocked.`,
+                    priority: 'High'
+                }).catch(err => console.error('Blacklist notification failed', err));
+            }
             return res.status(403).json({ error: 'CORS Blocked: Origin is blacklisted' });
         }
 
