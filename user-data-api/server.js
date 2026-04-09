@@ -46,8 +46,8 @@ const dynamicCorsMiddleware = async (req, res, next) => {
         }
 
         // 2. MANDATORY DASHBOARD ALLOW (Safe Default)
-        const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
-        if (originRaw === CLIENT_URL || origin === normalizeOrigin(CLIENT_URL)) {
+        const allowedDashboardOrigins = [process.env.CLIENT_URL, 'https://cors-orchestration.vercel.app', 'http://localhost:5173'];
+        if (allowedDashboardOrigins.some(url => url && (originRaw === url || origin === normalizeOrigin(url)))) {
             res.header('Access-Control-Allow-Origin', originRaw);
             res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
             res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key');

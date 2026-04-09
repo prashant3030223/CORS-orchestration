@@ -9,8 +9,9 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: process.env.CLIENT_URL || "http://localhost:5173",
-        methods: ["GET", "POST", "PUT", "DELETE"]
+        origin: [process.env.CLIENT_URL, "https://cors-orchestration.vercel.app", "http://localhost:5173"],
+        methods: ["GET", "POST", "PUT", "DELETE"],
+        credentials: true
     }
 });
 

@@ -14,7 +14,8 @@ const dynamicCorsMiddleware = async (req, res, next) => {
     }
 
     // MANDATORY: Always allow the Dashboard URL to ensure management is possible even if DB is empty
-    if (process.env.CLIENT_URL && (origin === process.env.CLIENT_URL || origin.replace(/\/$/, '') === process.env.CLIENT_URL.replace(/\/$/, ''))) {
+    const allowedOrigins = [process.env.CLIENT_URL, 'https://cors-orchestration.vercel.app', 'http://localhost:5173'];
+    if (allowedOrigins.some(url => url && (origin === url || origin.replace(/\/$/, '') === url.replace(/\/$/, '')))) {
         res.header('Access-Control-Allow-Origin', origin);
         res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
         res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, x-org-id');

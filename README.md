@@ -1,89 +1,68 @@
-# CORS Orchestration Platform
+# CORSGuard Orchestration Suite
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![React](https://img.shields.io/badge/Frontend-React_19-cyan)
-![Node.js](https://img.shields.io/badge/Backend-Node.js-green)
+An enterprise-grade orchestration and security platform for managing Cross-Origin Resource Sharing (CORS) policies across microservices.
 
-A centralized, real-time platform for managing Cross-Origin Resource Sharing (CORS) policies dynamically. 
+## 🚀 Overview
 
-Instead of hardcoding CORS configurations in individual services, this platform allows administrators to manage, monitor, and enforce CORS policies (origins, headers, and specific HTTP verbs) across various APIs and microservices from a single intuitive dashboard.
+CORSGuard provides a centralized dashboard and dynamic middleware to manage, monitor, and enforce CORS policies in real-time. It consists of three main components:
 
-## 🌟 Key Features
+-   **Frontend**: A premium React-based dashboard for managing policies and viewing security logs.
+-   **Backend (CORSGuard Engine)**: The core orchestration engine that manages policies, authentication, and real-time security alerts via Socket.io.
+-   **User Data API (Test Service)**: A demonstration microservice showing how the dynamic CORS middleware intercepts and validates cross-origin requests.
 
-- **Dynamic Policy Management**: Add, update, or remove allowed origins, methods, and headers without restarting your APIs.
-- **Fine-Grained Method Control**: Individually enable or disable specific HTTP verbs (`GET`, `POST`, `PUT`, `DELETE`, `PATCH`, `HEAD`) per origin.
-- **Real-Time Synchronization**: Changes made in the dashboard are instantly pushed to connected edge APIs via WebSockets (Socket.io).
-- **Interactive Dashboard**: A beautiful, modern UI built with React, Vite, and TailwindCSS, featuring data visualization (Chart.js) and animations (Framer Motion).
-- **Secure Authentication**: Role-based access control secured with JWT and bcrypt.
+## 🛠️ Tech Stack
 
-## 🏗️ Project Structure
+-   **Frontend**: Vite, React, Tailwind CSS, Framer Motion, Socket.io-client.
+-   **Backend**: Node.js, Express, MongoDB (Mongoose), Socket.io, JWT.
+-   **Infrastructure**: Environment-driven configuration, Centralized Policy Management.
 
-The repository is structured as a monorepo containing three main components:
-
-- **`/frontend`**: The admin dashboard UI (React, Vite, TailwindCSS, Chart.js).
-- **`/backend`**: The core orchestration service and WebSocket server that stores and distributes CORS policies (Node.js, Express, MongoDB, Socket.io).
-- **`/user-data-api`**: A sample/target API implementation demonstrating how to consume and enforce the dynamic CORS policies.
-
-## 🚀 Tech Stack
-
-- **Frontend**: React 19, Vite, Tailwind CSS, Framer Motion, Axios.
-- **Backend / API Services**: Node.js, Express, Socket.io, JsonWebToken.
-- **Database**: MongoDB (Mongoose).
-- **Tooling**: ESLint, Nodemon.
-
-## 🛠️ Installation & Setup
+## 🏁 Getting Started
 
 ### Prerequisites
-- Node.js (v18+)
-- MongoDB instance (local or Atlas)
 
-### 1. Clone the repository
+-   Node.js (v18+)
+-   MongoDB (Running locally or on Atlas)
+
+### Installation
+
+Install dependencies for all services from the root directory:
+
 ```bash
-git clone https://github.com/prashant3030223/CORS-orchestration.git
-cd CORS-orchestration
+npm run install-all
 ```
 
-### 2. Setup the Backend
+### Configuration
+
+1.  Copy `.env.example` to `.env` in the `frontend`, `backend`, and `user-data-api` directories.
+2.  Update the `MONGODB_URI` and other secrets as needed.
+
+### Development
+
+Run all three services concurrently:
+
 ```bash
-cd backend
-npm install
+npm run dev
 ```
-- Create a `.env` file in the `backend/` directory with your environment variables:
-  ```env
-  PORT=5000
-  MONGODB_URI=your_mongodb_connection_string
-  JWT_SECRET=your_secret_key
-  ```
-- Start the backend server:
-  ```bash
-  npm run dev
-  ```
 
-### 3. Setup the Frontend
-```bash
-cd ../frontend
-npm install
-```
-- Create a `.env` file in the `frontend/` directory if necessary (e.g., `VITE_API_URL=http://localhost:5000`).
-- Start the Vite development server:
-  ```bash
-  npm run dev
-  ```
+-   **Frontend**: [http://localhost:5173](http://localhost:5173)
+-   **Backend**: [http://localhost:5001](http://localhost:5001)
+-   **User Data API**: [http://localhost:5002](http://localhost:5002)
 
-### 4. Setup the Target API (User Data API)
-```bash
-cd ../user-data-api
-npm install
-```
-- Configure its `.env` and start it up:
-  ```bash
-  npm run dev
-  ```
+## 📦 Deployment
 
-## 🔐 Security
+1.  **Frontend**: Build the production bundle:
+    ```bash
+    npm run build
+    ```
+2.  **Backend & API**: Deploy the Node.js services to your preferred platform (e.g., Render, Railway, or Docker).
+3.  Ensure production environment variables are set correctly for each service.
 
-This application uses JWT for authentication and securely hashes passwords. The platform itself is designed to lock down security for participating microservices by enforcing strict, configurable CORS headers, preventing unauthorized cross-origin access and mitigating CSRF risks.
+## 🔒 Security
 
-## 📄 License
+CORSGuard allows for:
+-   **Dynamic Whitelisting**: Allow origins, methods, and headers on the fly.
+-   **Blacklisting**: Block malicious origins globally.
+-   **Real-time Auditing**: Every CORS block/allow is logged and streamed to the dashboard for immediate visibility.
 
-This project is open-source and available under the ISC License.
+---
+Built with ❤️ for secure web orchestration.
