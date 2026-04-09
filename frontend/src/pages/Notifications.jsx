@@ -30,6 +30,25 @@ const Notifications = () => {
 
         fetchNotifications();
 
+        // 1. Define Join Function
+        const joinOrg = () => {
+            const storedUser = localStorage.getItem('user');
+            if (!storedUser) return;
+            const user = JSON.parse(storedUser);
+            if (user && user.organization) {
+                const orgId = typeof user.organization === 'string' ? user.organization : user.organization._id;
+                socket.emit('join_org', orgId);
+            }
+        };
+
+        // 2. Initial Join
+        if (socket.connected) {
+            joinOrg();
+        }
+
+        // 3. Re-join on every connect
+        socket.on('connect', joinOrg);
+
         socket.on('notification_received', (notification) => {
             setNotifications(prev => [notification, ...prev]);
             toast.custom((t) => (
@@ -48,7 +67,10 @@ const Notifications = () => {
             ));
         });
 
-        return () => socket.off('notification_received');
+        return () => {
+            socket.off('connect', joinOrg);
+            socket.off('notification_received');
+        };
     }, []);
 
     const getIcon = (type) => {
