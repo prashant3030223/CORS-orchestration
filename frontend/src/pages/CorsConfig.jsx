@@ -16,11 +16,9 @@ const CorsConfig = () => {
     const [origins, setOrigins] = useState(['https://myapp.com', 'https://admin.myapp.com']);
     const [deniedOrigins, setDeniedOrigins] = useState(['https://malicious-site.net']);
     const [selectedMethods, setSelectedMethods] = useState(['GET', 'POST']);
-    const [allowedHeaders, setAllowedHeaders] = useState(['Content-Type', 'Authorization', 'x-api-key']);
 
     const [newOrigin, setNewOrigin] = useState('');
     const [newDeniedOrigin, setNewDeniedOrigin] = useState('');
-    const [newHeader, setNewHeader] = useState('');
 
     const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'];
 
@@ -51,12 +49,11 @@ const CorsConfig = () => {
                 // selectedApi can be object or ID depending on select interaction, ensuring ID
                 const apiId = selectedApi._id || selectedApi;
                 const res = await api.get(`/policies/${apiId}`);
-                const { allowedOrigins, blacklistedOrigins, allowedMethods, allowedHeaders, allowCredentials } = res.data;
+                const { allowedOrigins, blacklistedOrigins, allowedMethods, allowCredentials } = res.data;
 
                 setOrigins(allowedOrigins || []);
                 setDeniedOrigins(blacklistedOrigins || []);
                 setSelectedMethods(allowedMethods || ['GET', 'POST']);
-                setAllowedHeaders(allowedHeaders || ['Content-Type', 'Authorization', 'x-api-key']);
                 setAllowCredentials(allowCredentials || false);
                 setAllowAllMethods(allowedMethods?.includes('*') || false);
 
@@ -83,7 +80,6 @@ const CorsConfig = () => {
                     allowedOrigins: origins,
                     blacklistedOrigins: deniedOrigins,
                     allowedMethods: allowAllMethods ? ['*'] : selectedMethods,
-                    allowedHeaders: allowedHeaders,
                     allowCredentials,
                     isDeploying: false // Internal save, not full edge deploy log
                 });
@@ -96,7 +92,7 @@ const CorsConfig = () => {
         }, 1000); // 1-second debounce
 
         return () => clearTimeout(saveTimeout.current);
-    }, [origins, deniedOrigins, selectedMethods, allowedHeaders, allowCredentials, allowAllMethods, selectedApi]);
+    }, [origins, deniedOrigins, selectedMethods, allowCredentials, allowAllMethods, selectedApi]);
 
     const addOrigin = (type) => {
         const val = type === 'allowed' ? newOrigin : newDeniedOrigin;
@@ -119,17 +115,6 @@ const CorsConfig = () => {
             setDeniedOrigins([...deniedOrigins, val]);
             setNewDeniedOrigin('');
         }
-    };
-
-    const addHeader = () => {
-        if (!newHeader) return;
-        if (allowedHeaders.includes(newHeader)) return;
-        setAllowedHeaders([...allowedHeaders, newHeader]);
-        setNewHeader('');
-    };
-
-    const removeHeader = (val) => {
-        setAllowedHeaders(allowedHeaders.filter(h => h !== val));
     };
 
     const removeOrigin = (val, type) => {
@@ -163,7 +148,6 @@ const CorsConfig = () => {
                 allowedOrigins: origins,
                 blacklistedOrigins: deniedOrigins,
                 allowedMethods: allowAllMethods ? ['*'] : selectedMethods,
-                allowedHeaders: allowedHeaders,
                 allowCredentials,
                 isDeploying: true
             });
@@ -379,45 +363,6 @@ const CorsConfig = () => {
                                         {deniedOrigins.length === 0 && <p className="text-[11px] font-bold text-slate-400 py-4 italic">No blocked origins staged.</p>}
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-slate-900 p-8 rounded-[32px] border border-slate-200 dark:border-slate-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 bg-purple-50 dark:bg-purple-500/10 text-purple-600 rounded-xl flex items-center justify-center">
-                                <Zap className="w-5 h-5" />
-                            </div>
-                            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Allowed Headers</h3>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="relative group">
-                                <input
-                                    type="text"
-                                    value={newHeader}
-                                    onChange={(e) => setNewHeader(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && addHeader()}
-                                    placeholder="X-Custom-Header"
-                                    className="w-full pl-4 pr-12 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-purple-500/10 outline-none transition-all text-sm font-bold"
-                                />
-                                <button
-                                    onClick={addHeader}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-purple-600 text-white rounded-xl shadow-lg shadow-purple-500/20"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                </button>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2 min-h-[60px] content-start">
-                                {allowedHeaders.map(header => (
-                                    <div key={header} className="flex items-center gap-2 px-3 py-2 bg-purple-50/50 dark:bg-purple-500/10 rounded-xl border border-purple-100 dark:border-purple-500/20 animate-in zoom-in-95">
-                                        <span className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest">{header}</span>
-                                        <button onClick={() => removeHeader(header)} className="text-slate-400 hover:text-red-500 transition-colors">
-                                            <X className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                ))}
                             </div>
                         </div>
                     </div>

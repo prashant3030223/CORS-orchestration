@@ -112,7 +112,7 @@ const dynamicCorsMiddleware = async (req, res, next) => {
             // Handle Headers
             const headers = (matchedPolicy.allowedHeaders && matchedPolicy.allowedHeaders.length > 0)
                 ? matchedPolicy.allowedHeaders.join(', ')
-                : (matchedPolicy.allowedHeaders ? '' : 'Content-Type, Authorization');
+                : 'Content-Type, Authorization, x-api-key';
             res.header('Access-Control-Allow-Headers', headers);
 
             if (matchedPolicy.allowCredentials) res.header('Access-Control-Allow-Credentials', 'true');
