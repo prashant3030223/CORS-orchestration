@@ -96,7 +96,8 @@ const dynamicCorsMiddleware = async (req, res, next) => {
 
             // Log to main DB 'logs' and 'notifications' collections
             const potentialOrg = policies.length > 0 ? policies[0].organization : null;
-            if (potentialOrg && (originRaw !== CLIENT_URL)) {
+            const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+            if (potentialOrg && (originRaw !== clientUrl)) {
                 const timestamp = new Date();
 
                 // 1. Audit Log

@@ -52,10 +52,19 @@ exports.updatePolicy = async (req, res) => {
                 blacklistedOrigins: blacklistedOrigins || [],
                 allowedMethods: allowedMethods || ['GET', 'POST'],
                 allowCredentials: !!allowCredentials,
-                status: 'Active'
+                isActive: true
             },
             { new: true, upsert: true, setDefaultsOnInsert: true }
         );
+
+        // Notify via Socket for REAL-TIME propagation
+        if (req.io) {
+            req.io.to(orgId.toString()).emit('policy_updated', {
+                apiId,
+                name: policy.name,
+                timestamp: new Date()
+            });
+        }
 
         if (isDeploying) {
             await Log.create({
@@ -67,6 +76,15 @@ exports.updatePolicy = async (req, res) => {
                 severity: 'Low',
                 details: `CORS policy deployed. Allowed Origins: ${allowedOrigins?.length || 0}, Methods: ${allowedMethods?.join(', ') || 'Default'}`
             });
+
+            // Specific event for "Deployment"
+            if (req.io) {
+                req.io.to(orgId.toString()).emit('deployment_complete', {
+                    apiId,
+                    apiName,
+                    timestamp: new Date()
+                });
+            }
         }
 
         // Invalidate global policy cache

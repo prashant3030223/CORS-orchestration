@@ -38,7 +38,6 @@ exports.createApi = async (req, res) => {
             message: `${newApi.name} has been added to the infrastructure.`
         });
         await notification.save();
-        req.io.to(req.user.organization.toString()).emit('notification_received', notification);
 
         res.status(201).json(newApi);
     } catch (err) {

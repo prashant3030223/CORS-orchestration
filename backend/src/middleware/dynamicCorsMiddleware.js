@@ -117,8 +117,6 @@ const dynamicCorsMiddleware = async (req, res, next) => {
                     method: req.method,
                     status: 'Allowed',
                     details: `Request allowed by policy: ${matchedPolicy.name}`
-                }).then(newLog => {
-                    if (req.io) req.io.to(matchedPolicy.organization.toString()).emit('log_received', newLog);
                 }).catch(err => console.error('Logging failed', err));
             }
         } else {
@@ -133,8 +131,6 @@ const dynamicCorsMiddleware = async (req, res, next) => {
                     method: req.method,
                     status: 'Blocked',
                     details: 'Unauthorized cross-origin access attempt blocked by policy.'
-                }).then(newLog => {
-                    if (req.io) req.io.to(potentialOrg.toString()).emit('log_received', newLog);
                 }).catch(err => console.error('Blocked log failed', err));
 
                 Notification.create({
@@ -143,8 +139,6 @@ const dynamicCorsMiddleware = async (req, res, next) => {
                     title: 'Security Threat Blocked',
                     message: `Unauthorized cross-origin attempt from ${origin} was intercepted.`,
                     priority: 'High'
-                }).then(newNotif => {
-                    if (req.io) req.io.to(potentialOrg.toString()).emit('notification_received', newNotif);
                 }).catch(err => console.error('Blocked notification failed', err));
             }
         }

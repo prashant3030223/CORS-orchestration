@@ -16,7 +16,6 @@ exports.createLog = async (req, res) => {
     });
     try {
         const newLog = await log.save();
-        req.io.to(req.user.organization.toString()).emit('log_received', newLog);
         res.status(201).json(newLog);
     } catch (err) {
         res.status(400).json({ message: err.message });
