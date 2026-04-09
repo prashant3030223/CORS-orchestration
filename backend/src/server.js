@@ -76,6 +76,8 @@ const connectDB = async () => {
             console.log('🗑️ Successfully dropped old unique index.');
         } catch (e) {
             // Index might not exist, which is fine
+        }
+
         // 📡 Real-time Database Watchers (Change Streams)
         const logChangeStream = mongoose.connection.collection('logs').watch();
         logChangeStream.on('change', (change) => {
