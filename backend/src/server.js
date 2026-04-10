@@ -64,6 +64,8 @@ io.on('connection', (socket) => {
 const connectDB = async () => {
     try {
         mongoose.set('strictQuery', false);
+        // MongoDB connection configuration is kept minimal here
+        // to preserve deployment stability and keep the DB path easy to audit.
         const conn = await mongoose.connect(process.env.MONGODB_URI, {
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
