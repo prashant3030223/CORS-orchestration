@@ -5,3 +5,4 @@ Apply validation
 Enhance reporting
 Move types
 Ensure propagation
+Clean config
