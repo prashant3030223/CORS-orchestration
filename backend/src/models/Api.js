@@ -10,9 +10,9 @@ const apiSchema = new mongoose.Schema({
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
-// Fast lookup by API Key (Critical for auth)
+// Primary indexes for efficient MongoDB query and auth enforcement
 apiSchema.index({ key: 1 }, { unique: true });
-// Group APIs by Organization
+// Group APIs by Organization for fast filtering
 apiSchema.index({ organization: 1 });
 
 module.exports = mongoose.model('Api', apiSchema);
