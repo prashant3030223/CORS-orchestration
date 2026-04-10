@@ -3,3 +3,4 @@ Patch heartbeat
 Streamline retrieval
 Apply validation
 Enhance reporting
+Move types
