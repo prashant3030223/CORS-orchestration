@@ -35,6 +35,7 @@ npm run install-all
 
 1.  Copy `.env.example` to `.env` in the `frontend`, `backend`, and `user-data-api` directories.
 2.  Update the `MONGODB_URI` and other secrets as needed.
+3.  Ensure `MONGODB_URI` points to a valid MongoDB Atlas cluster or local MongoDB instance for backend deployment.
 
 ### Development
 
