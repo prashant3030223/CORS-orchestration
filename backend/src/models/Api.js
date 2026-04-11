@@ -1,5 +1,8 @@
+// API model schema for storing registered API instances
+// Includes organization-based access control and ownership tracking
 const mongoose = require('mongoose');
 
+// Defines API structure with organization-level segregation
 const apiSchema = new mongoose.Schema({
     organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
     name: { type: String, required: true },
