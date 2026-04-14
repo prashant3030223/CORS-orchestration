@@ -144,63 +144,58 @@ const Logs = () => {
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-slate-50/50 dark:bg-slate-950/50 text-[10px] uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-200">
+                        <thead className="bg-slate-50/50 dark:bg-slate-950/50 text-[9px] uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-200">
                             <tr>
-                                <th className="px-10 py-6">Event Lifecycle</th>
-                                <th className="px-10 py-6">Type</th>
-                                <th className="px-10 py-6">Origin Node</th>
-                                <th className="px-10 py-6">Method</th>
-                                <th className="px-10 py-6">Endpoint</th>
-                                <th className="px-10 py-6">Outcome</th>
-                                <th className="px-10 py-6">Details</th>
-                                <th className="px-10 py-6 text-right pr-14">Vault</th>
+                                <th className="px-8 py-6">Event & Type</th>
+                                <th className="px-8 py-6">Origin Node</th>
+                                <th className="px-8 py-6">Request Trace</th>
+                                <th className="px-8 py-6">Outcome</th>
+                                <th className="px-8 py-6 max-w-[200px]">Details</th>
+                                <th className="px-8 py-6 text-right pr-12">Vault</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 bg-transparent">
                             {filteredLogs.map((log) => (
                                 <tr key={log._id} className="group hover:bg-blue-500/[0.02] dark:hover:bg-blue-500/[0.03] transition-colors">
-                                    <td className="px-10 py-8">
-                                        <div className="flex items-center gap-4 text-[11px] font-black text-slate-600 dark:text-slate-300 tabular-nums">
-                                            <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                                                <Clock className="w-4 h-4 text-blue-500" />
+                                    <td className="px-8 py-6">
+                                        <div className="flex flex-col gap-1">
+                                            <div className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tight">{log.eventType}</div>
+                                            <div className="text-[9px] font-bold text-slate-400 dark:text-slate-500 tabular-nums">
+                                                {new Date(log.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'medium' })}
                                             </div>
-                                            {new Date(log.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'medium' })}
                                         </div>
                                     </td>
-                                    <td className="px-10 py-8">
-                                        <div className="font-black text-sm text-slate-900 dark:text-white uppercase tracking-tight">{log.eventType}</div>
+                                    <td className="px-8 py-6">
+                                        <code className="text-[10px] font-black text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 rounded-xl border border-blue-100 dark:border-blue-500/10">{log.origin || 'INTERNAL'}</code>
                                     </td>
-                                    <td className="px-10 py-8">
-                                        <code className="text-[10px] font-black text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-500/20 px-4 py-2 rounded-2xl border border-blue-100 dark:border-blue-500/20">{log.origin || 'INTERNAL'}</code>
+                                    <td className="px-8 py-6">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[9px] font-black text-slate-700 dark:text-white bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded-lg uppercase tracking-wider">{log.method || 'N/A'}</span>
+                                            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 truncate max-w-[150px]">{log.apiEndpoint || 'N/A'}</span>
+                                        </div>
                                     </td>
-                                    <td className="px-10 py-8">
-                                        <span className="text-[10px] font-black text-slate-700 dark:text-white bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-xl uppercase tracking-wider border border-slate-300/30 dark:border-white/5">{log.method || 'N/A'}</span>
-                                    </td>
-                                    <td className="px-10 py-8">
-                                        <span className="text-[10px] font-black text-slate-700 dark:text-white bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-300/30 dark:border-white/5">{log.apiEndpoint || 'N/A'}</span>
-                                    </td>
-                                    <td className="px-10 py-8">
+                                    <td className="px-8 py-6">
                                         <span className={cn(
-                                            "inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-sm",
+                                            "inline-flex items-center gap-2.5 px-3 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all shadow-sm",
                                             log.status === 'Allowed'
-                                                ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 neon-glow-green'
+                                                ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20'
                                                 : log.status === 'Blocked'
-                                                    ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 neon-glow-red'
+                                                    ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20'
                                                     : 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20'
                                         )}>
-                                            {log.status === 'Allowed' ? <ShieldCheck className="w-4.5 h-4.5" /> : <ShieldAlert className="w-4.5 h-4.5" />}
+                                            {log.status === 'Allowed' ? <ShieldCheck className="w-3.5 h-3.5" /> : <ShieldAlert className="w-3.5 h-3.5" />}
                                             {log.status}
                                         </span>
                                     </td>
-                                    <td className="px-10 py-8">
-                                        <span className="text-[11px] font-medium text-slate-600 dark:text-slate-200 opacity-90">{log.details}</span>
+                                    <td className="px-8 py-6 max-w-[200px]">
+                                        <p className="text-[10px] font-medium text-slate-600 dark:text-slate-300 opacity-90 truncate hover:whitespace-normal hover:overflow-visible transition-all cursor-help">{log.details}</p>
                                     </td>
-                                    <td className="px-10 py-8 text-right pr-14">
+                                    <td className="px-8 py-6 text-right pr-12">
                                         <button
                                             onClick={() => toast.success(`Inspecting trace #${log._id}`)}
-                                            className="p-3.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-2xl transition-all active:scale-90"
+                                            className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-xl transition-all active:scale-90"
                                         >
-                                            <BarChart3 className="w-5.5 h-5.5" />
+                                            <BarChart3 className="w-5 h-5" />
                                         </button>
                                     </td>
                                 </tr>
