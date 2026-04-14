@@ -13,8 +13,11 @@ const dynamicCorsMiddleware = async (req, res, next) => {
         return next();
     }
 
-    // MANDATORY: Always allow the Dashboard URL to ensure management is possible even if DB is empty
-    if (process.env.CLIENT_URL && (origin === process.env.CLIENT_URL || origin.replace(/\/$/, '') === process.env.CLIENT_URL.replace(/\/$/, ''))) {
+    // MANDATORY: Always allow the Dashboard URL and the known Netlify production URL
+    const isDashboard = process.env.CLIENT_URL && (origin === process.env.CLIENT_URL || origin.replace(/\/$/, '') === process.env.CLIENT_URL.replace(/\/$/, ''));
+    const isProductionNetlify = origin === 'https://cors-orchestration.netlify.app';
+
+    if (isDashboard || isProductionNetlify) {
         res.header('Access-Control-Allow-Origin', origin);
         res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
         res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, x-org-id');
