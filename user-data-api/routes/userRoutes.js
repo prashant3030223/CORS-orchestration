@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
+const UserData = require('../models/User');
 
 // Get all users
 router.get('/', async (req, res) => {
     try {
-        const users = await User.find();
+        const users = await UserData.find().select('name email role -_id');
         res.json(users);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
 
 // Create a user
 router.post('/', async (req, res) => {
-    const user = new User({
+    const user = new UserData({
         name: req.body.name,
         email: req.body.email,
         role: req.body.role
@@ -22,7 +22,10 @@ router.post('/', async (req, res) => {
 
     try {
         const newUser = await user.save();
-        res.status(201).json(newUser);
+        const responseData = newUser.toObject();
+        delete responseData._id;
+        delete responseData.__v;
+        res.status(201).json(responseData);
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -57,9 +60,15 @@ router.post('/seed', async (req, res) => {
     ];
 
     try {
-        await User.deleteMany({});
-        const createdUsers = await User.insertMany(sampleUsers);
-        res.status(201).json({ message: 'Database seeded!', users: createdUsers });
+        await UserData.deleteMany({});
+        const createdUsers = await UserData.insertMany(sampleUsers);
+        const cleanedUsers = createdUsers.map(u => {
+            const obj = u.toObject();
+            delete obj._id;
+            delete obj.__v;
+            return obj;
+        });
+        res.status(201).json({ message: 'Database seeded!', users: cleanedUsers });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

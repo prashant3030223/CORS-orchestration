@@ -1,8 +1,5 @@
-// API model schema for storing registered API instances
-// Includes organization-based access control and ownership tracking
 const mongoose = require('mongoose');
 
-// Defines API structure with organization-level segregation
 const apiSchema = new mongoose.Schema({
     organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
     name: { type: String, required: true },
@@ -13,9 +10,9 @@ const apiSchema = new mongoose.Schema({
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
-// Primary indexes for efficient MongoDB query and auth enforcement
+// Fast lookup by API Key (Critical for auth)
 apiSchema.index({ key: 1 }, { unique: true });
-// Group APIs by Organization for fast filtering
+// Group APIs by Organization
 apiSchema.index({ organization: 1 });
 
 module.exports = mongoose.model('Api', apiSchema);

@@ -14,67 +14,84 @@ app.use(express.json());
 const normalizeOrigin = (url) => url ? url.replace(/\/$/, '') : '';
 
 // Custom Dynamic CORS Middleware
+// Custom Dynamic CORS Middleware
 const dynamicCorsMiddleware = async (req, res, next) => {
     const originRaw = req.headers.origin;
     if (!originRaw) return next();
     const origin = normalizeOrigin(originRaw);
 
     try {
-        // Query the SAME database collection as the main backend
         const policies = await mongoose.connection.db.collection('corspolicies').find({ isActive: true }).toArray();
+        const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 
-        // 1. GLOBAL BLACKLIST CHECK (Highest Priority)
-        const isBlacklistedGlobally = policies.some(policy =>
-            policy.blacklistedOrigins && policy.blacklistedOrigins.some(blocked => {
-                const normBlocked = normalizeOrigin(blocked);
-                if (normBlocked === origin) return true;
-                if (normBlocked.startsWith('*.')) {
-                    const domain = normBlocked.slice(2);
-                    try {
-                        const originUrl = new URL(originRaw);
-                        const originHostname = originUrl.hostname;
-                        return originHostname === domain || originHostname.endsWith(`.${domain}`);
-                    } catch (e) { return false; }
+        // Unified Logging Helper
+        const recordSecurityEvent = async (status, details, sourcePolicy = null) => {
+            let targetOrg = sourcePolicy ? sourcePolicy.organization : null;
+            
+            // Fallback: If no organization ID in policy, find ANY available organization
+            if (!targetOrg) {
+                const fallbackPolicy = policies.find(p => p.organization);
+                if (fallbackPolicy) {
+                    targetOrg = fallbackPolicy.organization;
+                } else {
+                    const firstOrg = await mongoose.connection.db.collection('organizations').findOne({});
+                    targetOrg = firstOrg ? firstOrg._id : null;
+                }
+            }
+
+            if (targetOrg) {
+                const timestamp = new Date();
+                const isAllowed = status === 'Allowed';
+
+                // 1. Audit Log 
+                await mongoose.connection.db.collection('logs').insertOne({
+                    organization: targetOrg,
+                    eventType: isAllowed ? 'CORS Access' : 'Security Alert',
+                    apiEndpoint: 'User Data API',
+                    origin: originRaw,
+                    method: req.method,
+                    status: status,
+                    details: details,
+                    timestamp: timestamp
+                });
+
+                // 2. Intelligence Alert
+                await mongoose.connection.db.collection('notifications').insertOne({
+                    organization: targetOrg,
+                    type: isAllowed ? 'policy' : 'security',
+                    title: isAllowed ? 'Authorized Access (User API)' : 'Security Threat Blocked (User API)',
+                    message: isAllowed 
+                        ? `Origin ${originRaw} accessed User API via ${req.method}`
+                        : `Origin ${originRaw} attempted unauthorized ${req.method} access`,
+                    priority: isAllowed ? 'Low' : 'High',
+                    read: false,
+                    createdAt: timestamp,
+                    updatedAt: timestamp
+                });
+                console.log(`📡 Security Feed Updated: ${status} [${originRaw}]`);
+            }
+        };
+
+        // 1. Global Blacklist Check
+        const blacklisted = policies.find(p => 
+            p.blacklistedOrigins?.some(b => {
+                const normB = normalizeOrigin(b);
+                if (normB === origin) return true;
+                if (normB.startsWith('*.')) {
+                    try { return new URL(originRaw).hostname.endsWith(normB.slice(1)); } catch(e) { return false; }
                 }
                 return false;
             })
         );
 
-        if (isBlacklistedGlobally) {
-            console.log(`🚫 CORS Blocked (Globally Blacklisted) for origin: ${originRaw}`);
-            const potentialOrg = policies.find(p => p.blacklistedOrigins && p.blacklistedOrigins.some(b => normalizeOrigin(b) === origin || (normalizeOrigin(b).startsWith('*.') && originRaw.endsWith(normalizeOrigin(b).slice(2)))))?.organization || (policies.length > 0 ? policies[0].organization : null);
-            
-            if (potentialOrg) {
-                const timestamp = new Date();
-                mongoose.connection.db.collection('logs').insertOne({
-                    organization: potentialOrg,
-                    eventType: 'Security Alert',
-                    apiEndpoint: req.path,
-                    origin: originRaw,
-                    method: req.method,
-                    status: 'Blocked',
-                    severity: 'High',
-                    details: 'Blocked by Global Blacklist.',
-                    timestamp: timestamp
-                }).catch(err => console.error('Blacklist log failed', err));
-
-                mongoose.connection.db.collection('notifications').insertOne({
-                    organization: potentialOrg,
-                    type: 'security',
-                    title: 'Blacklisted Origin Blocked (Test API)',
-                    message: `Block sequence initiated for malicious origin: ${originRaw}`,
-                    priority: 'High',
-                    read: false,
-                    createdAt: timestamp,
-                    updatedAt: timestamp
-                }).catch(err => console.error('Blacklist notification failed', err));
-            }
+        if (blacklisted) {
+            console.log(`🚫 Blocked (Global Blacklist): ${originRaw}`);
+            await recordSecurityEvent('Blocked', `Origin is globally blacklisted: ${originRaw}`, blacklisted);
             return res.status(403).json({ error: 'CORS Blocked: Origin is blacklisted' });
         }
 
-        // 2. MANDATORY DASHBOARD ALLOW (Safe Default)
-        const allowedDashboardOrigins = [process.env.CLIENT_URL, 'https://cors-orchestration.vercel.app', 'http://localhost:5173'];
-        if (allowedDashboardOrigins.some(url => url && (originRaw === url || origin === normalizeOrigin(url)))) {
+        // 2. System Bypass (Dashboard)
+        if (originRaw === CLIENT_URL || origin === normalizeOrigin(CLIENT_URL)) {
             res.header('Access-Control-Allow-Origin', originRaw);
             res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
             res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key');
@@ -83,79 +100,37 @@ const dynamicCorsMiddleware = async (req, res, next) => {
             return next();
         }
 
-        // 3. Check for an Allow Match
-        const matchedPolicy = policies.find(policy => {
-            return policy.allowedOrigins.some(allowed => {
-                const normAllowed = normalizeOrigin(allowed);
-                if (normAllowed === '*' || normAllowed === origin) return true;
-                if (normAllowed.startsWith('*.')) {
-                    const domain = normAllowed.slice(2);
-                    try {
-                        const originUrl = new URL(originRaw);
-                        const originHostname = originUrl.hostname;
-                        return originHostname === domain || originHostname.endsWith(`.${domain}`);
-                    } catch (e) { return false; }
+        // 3. Dynamic Policy Match
+        const matched = policies.find(p => 
+            p.allowedOrigins?.some(a => {
+                const normA = normalizeOrigin(a);
+                if (normA === '*' || normA === origin) return true;
+                if (normA.startsWith('*.')) {
+                    try { return new URL(originRaw).hostname.endsWith(normA.slice(1)); } catch(e) { return false; }
                 }
                 return false;
-            });
-        });
+            })
+        );
 
-        if (matchedPolicy) {
+        if (matched) {
             res.header('Access-Control-Allow-Origin', originRaw);
-
-            // Handle Wildcard Methods
-            const methods = (matchedPolicy.allowedMethods && matchedPolicy.allowedMethods.length > 0)
-                ? (matchedPolicy.allowedMethods.includes('*') ? 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD' : matchedPolicy.allowedMethods.join(', '))
-                : (matchedPolicy.allowedMethods ? '' : 'GET, POST, OPTIONS');
+            const methods = matched.allowedMethods?.includes('*') 
+                ? 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD' 
+                : (matched.allowedMethods?.join(', ') || 'GET, POST, PUT, DELETE, OPTIONS');
             res.header('Access-Control-Allow-Methods', methods);
-
-            // Handle Headers
-            const headers = (matchedPolicy.allowedHeaders && matchedPolicy.allowedHeaders.length > 0)
-                ? matchedPolicy.allowedHeaders.join(', ')
-                : 'Content-Type, Authorization, x-api-key';
-            res.header('Access-Control-Allow-Headers', headers);
-
-            if (matchedPolicy.allowCredentials) res.header('Access-Control-Allow-Credentials', 'true');
+            res.header('Access-Control-Allow-Headers', matched.allowedHeaders?.join(', ') || 'Content-Type, Authorization, x-api-key');
+            if (matched.allowCredentials) res.header('Access-Control-Allow-Credentials', 'true');
             if (req.method === 'OPTIONS') return res.status(200).end();
+
+            await recordSecurityEvent('Allowed', `Access granted by policy: ${matched.name}`, matched);
             return next();
         } else {
-            console.log(`🚫 CORS Blocked (No Allow Match) for origin: ${originRaw}`);
-
-            // Log to main DB 'logs' and 'notifications' collections
-            const potentialOrg = policies.length > 0 ? policies[0].organization : null;
-            const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-            if (potentialOrg && (originRaw !== clientUrl)) {
-                const timestamp = new Date();
-
-                // 1. Audit Log
-                mongoose.connection.db.collection('logs').insertOne({
-                    organization: potentialOrg,
-                    eventType: 'Security Alert',
-                    apiEndpoint: req.path,
-                    origin: originRaw,
-                    method: req.method,
-                    status: 'Blocked',
-                    details: 'Unauthorized cross-origin access attempt blocked by Test API.',
-                    timestamp: timestamp
-                }).catch(err => console.error('Blocked log failed', err));
-
-                // 2. Intelligence Alert
-                mongoose.connection.db.collection('notifications').insertOne({
-                    organization: potentialOrg,
-                    type: 'security',
-                    title: 'Security Threat Blocked (Test API)',
-                    message: `Unauthorized attempt from ${originRaw} intercepted by Test API.`,
-                    priority: 'High',
-                    read: false,
-                    createdAt: timestamp,
-                    updatedAt: timestamp
-                }).catch(err => console.error('Blocked notification failed', err));
-            }
-
-            return res.status(403).json({ error: 'CORS Blocked: No matching allow-policy found' });
+            console.log(`🚫 Blocked (No Policy Match): ${originRaw}`);
+            await recordSecurityEvent('Blocked', `No matching allow-policy found for origin: ${originRaw}`);
+            return res.status(403).json({ error: 'CORS Blocked: No matching policy' });
         }
     } catch (err) {
-        console.error('CORS Middleware Error:', err);
+        console.error('CORS Engine Error:', err);
         next();
     }
 };
@@ -179,4 +154,3 @@ mongoose.connect(process.env.MONGODB_URI)
 app.listen(PORT, () => {
     console.log(`User Data API running on port ${PORT}`);
 });
- 

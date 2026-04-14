@@ -7,6 +7,7 @@ const logSchema = new mongoose.Schema({
     sourceIp: { type: String },
     origin: { type: String },
     apiEndpoint: { type: String },
+    method: { type: String },
     status: { type: String, enum: ['Blocked', 'Allowed', 'Modified'], default: 'Allowed' },
     severity: { type: String, enum: ['Low', 'Medium', 'High', 'Critical'], default: 'Low' },
     details: { type: String }

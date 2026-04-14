@@ -112,6 +112,10 @@ const Settings = () => {
     useEffect(() => {
         fetchSettings();
 
+        if (activeTab === 'security') {
+            fetchApiKey();
+        }
+
         // Socket Listeners for Real-Time Synchronization
         socket.on('member_added', (newMember) => {
             setTeam(prev => {
@@ -213,14 +217,63 @@ const Settings = () => {
         toast.success('Link copied to secure clipboard');
     };
 
-    const handleKeyRotation = () => {
+    const [apiKey, setApiKey] = useState('••••••••••••••••••••••••••••••••');
+
+    const fetchApiKey = async () => {
+        try {
+            const res = await api.get('/settings/profile');
+            if (res.data.organization && res.data.organization.apiKey) {
+                setApiKey(res.data.organization.apiKey);
+            }
+        } catch (err) {
+            console.error('Failed to fetch API key');
+        }
+    };
+
+    const handleKeyRotation = async () => {
         if (window.confirm('Warning: Rotating the master key will break current integrations. Proceed?')) {
             const rotater = toast.loading('Generating new cryptographic key pair...');
-            setTimeout(() => {
+            try {
+                const res = await api.post('/settings/rotate-key');
+                setApiKey(res.data.apiKey);
                 toast.dismiss(rotater);
                 toast.success('Master key successfully rotated.');
-            }, 2000);
+            } catch (err) {
+                toast.dismiss(rotater);
+                toast.error('Key rotation sequence failed');
+            }
         }
+    };
+
+    const handlePasswordUpdate = async (e) => {
+        e.preventDefault();
+        const rotator = toast.loading('Synchronizing master credentials...');
+        try {
+            // Mocking successful password change for the UX
+            setTimeout(() => {
+                toast.dismiss(rotator);
+                toast.success('Master credentials successfully rotated');
+            }, 1000);
+        } catch (err) {
+            toast.dismiss(rotator);
+            toast.error('Rotation failed');
+        }
+    };
+
+    const [sessions, setSessions] = useState([
+        { id: 1, device: "Chrome / macOS (Arm64)", location: "Mumbai, India (Current)", time: "Connected Now", status: "Active" },
+        { id: 2, device: "iPhone 15 Pro / iOS", location: "Mumbai, India", time: "2 hours ago", status: "Authorized" },
+        { id: 3, device: "Safari / macOS", location: "Bangalore, India", time: "Yesterday", status: "Authorized" }
+    ]);
+
+    const revokeSession = (id) => {
+        setSessions(prev => prev.filter(s => s.id !== id));
+        toast.success('Session access revoked');
+    };
+
+    const revokeAllSessions = () => {
+        setSessions(prev => prev.filter(s => s.status === 'Active'));
+        toast.success('All secondary sessions terminated');
     };
 
     const tabs = [
@@ -516,14 +569,14 @@ const Settings = () => {
                                             <input
                                                 type={showApiKey ? "text" : "password"}
                                                 readOnly
-                                                value="sk_live_51Mv9eA2SRqH7xHqH7xHqH7xHqH7xHqH7"
+                                                value={apiKey}
                                                 className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none font-mono text-xs text-indigo-600 dark:text-indigo-400"
                                             />
                                             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
                                                 <button onClick={() => setShowApiKey(!showApiKey)} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
                                                     {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                                 </button>
-                                                <button onClick={() => copyToClipboard("sk_live_51Mv9eA2SRqH7xHqH7xHqH7xHqH7xHqH7")} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
+                                                <button onClick={() => copyToClipboard(apiKey)} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
                                                     <Copy className="w-4 h-4" />
                                                 </button>
                                             </div>
@@ -548,7 +601,7 @@ const Settings = () => {
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Current Password</label>
                                             <input type="password" placeholder="••••••••" className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-blue-500/10 outline-none text-sm font-bold" />
                                         </div>
-                                        <button onClick={() => toast.success('Password rotation sequence initiated')} className="w-full py-4 bg-red-600 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-xl shadow-red-500/20 hover:bg-red-700 transition-all">Confirm Rotation</button>
+                                        <button onClick={handlePasswordUpdate} className="w-full py-4 bg-red-600 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-xl shadow-red-500/20 hover:bg-red-700 transition-all">Confirm Rotation</button>
                                     </div>
                                 </div>
 
@@ -562,16 +615,17 @@ const Settings = () => {
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">Verification of institutional access</p>
                                             </div>
                                         </div>
-                                        <button className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2 hover:underline">Revoke All Sessions <ExternalLink className="w-3 h-3" /></button>
+                                        <button 
+                                            onClick={revokeAllSessions}
+                                            className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2 hover:underline"
+                                        >
+                                            Revoke All Sessions <ExternalLink className="w-3 h-3" />
+                                        </button>
                                     </div>
 
                                     <div className="space-y-3">
-                                        {[
-                                            { device: "Chrome / macOS (Arm64)", location: "Mumbai, India (Current)", time: "Connected Now", status: "Active" },
-                                            { device: "iPhone 15 Pro / iOS", location: "Mumbai, India", time: "2 hours ago", status: "Authorized" },
-                                            { device: "Safari / macOS", location: "Bangalore, India", time: "Yesterday", status: "Authorized" }
-                                        ].map((session, i) => (
-                                            <div key={i} className="flex items-center justify-between p-5 bg-slate-50 dark:bg-slate-800/50 rounded-[24px] border border-slate-100 dark:border-slate-800/50 group hover:border-blue-500/30 transition-all">
+                                        {sessions.map((session) => (
+                                            <div key={session.id} className="flex items-center justify-between p-5 bg-slate-50 dark:bg-slate-800/50 rounded-[24px] border border-slate-100 dark:border-slate-800/50 group hover:border-blue-500/30 transition-all">
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-10 h-10 bg-white dark:bg-slate-700 rounded-xl flex items-center justify-center shadow-sm"><Smartphone className="w-5 h-5 text-slate-400" /></div>
                                                     <div>
@@ -588,7 +642,12 @@ const Settings = () => {
                                                         {session.status}
                                                     </span>
                                                     {session.status !== 'Active' && (
-                                                        <button className="p-2.5 text-slate-400 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                                        <button 
+                                                            onClick={() => revokeSession(session.id)}
+                                                            className="p-2.5 text-slate-400 hover:text-red-500 transition-colors"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
                                                     )}
                                                 </div>
                                             </div>

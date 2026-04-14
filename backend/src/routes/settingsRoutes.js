@@ -10,5 +10,6 @@ router.get('/team', protect, settingsController.getTeam);
 router.post('/team/invite', protect, settingsController.inviteMember);
 router.post('/team/invite-link', protect, settingsController.generateInviteLink);
 router.delete('/team/:id', protect, settingsController.removeMember);
+router.post('/rotate-key', protect, settingsController.rotateApiKey);
 
 module.exports = router;

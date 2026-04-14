@@ -4,42 +4,19 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
-// Main backend server entry point for CORSGuard Engine
-// Handles Express app, Socket.io, MongoDB, and API routing
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: [process.env.CLIENT_URL, "https://cors-orchestration.netlify.app", "https://cors-orchestration.vercel.app", "http://localhost:5173"],
-        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        credentials: true
+        origin: process.env.CLIENT_URL || "http://localhost:5173",
+        methods: ["GET", "POST", "PUT", "DELETE"]
     }
 });
 
 // Middleware
 const dynamicCorsMiddleware = require('./middleware/dynamicCorsMiddleware');
 app.use(express.json({ limit: '50mb' }));
-
-// 🛡️ Global CORS Configuration
-app.use(cors({
-    origin: (origin, callback) => {
-        const allowed = [
-            process.env.CLIENT_URL,
-            'https://cors-orchestration.netlify.app',
-            'https://cors-orchestration.vercel.app',
-            'http://localhost:5173'
-        ];
-        if (!origin || allowed.some(url => url && url.replace(/\/$/, '') === origin.replace(/\/$/, '')) || origin.endsWith('.netlify.app') || origin.endsWith('.vercel.app')) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORSGuard'));
-        }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-org-id', 'Accept', 'Origin', 'X-Requested-With']
-}));
 
 // Attach IO to request for controllers
 app.use((req, res, next) => {
@@ -52,11 +29,19 @@ app.use(dynamicCorsMiddleware);
 // Socket.io Real-time Protocol
 io.on('connection', (socket) => {
     console.log('⚡ Client connected to security stream:', socket.id);
+
     socket.on('join_org', (orgId) => {
         if (!orgId) return;
-        socket.join(orgId.toString());
-        console.log(`📡 Client joined organization vault: ${orgId}`);
+        const roomName = orgId.toString();
+
+        // Prevent redundant logs if already in room
+        const isAlreadyJoined = socket.rooms.has(roomName);
+        if (!isAlreadyJoined) {
+            socket.join(roomName);
+            console.log(`📡 Client joined organization vault: ${orgId}`);
+        }
     });
+
     socket.on('disconnect', (reason) => {
         console.log(`❌ Client disconnected from stream (${reason}):`, socket.id);
     });
@@ -66,59 +51,71 @@ io.on('connection', (socket) => {
 const connectDB = async () => {
     try {
         mongoose.set('strictQuery', false);
-        // MongoDB connection configuration is kept minimal here
-        // to preserve deployment stability and keep the DB path easy to audit.
         const conn = await mongoose.connect(process.env.MONGODB_URI, {
-            serverSelectionTimeoutMS: 5000,
+            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
             socketTimeoutMS: 45000,
         });
         console.log(`🍃 MongoDB connected: ${conn.connection.host}`);
-        
-        // 🗑️ FORCE DROP problematic unique index
-        try {
-            await mongoose.connection.collection('corspolicies').dropIndex('organization_1_name_1');
-            console.log('🗑️ Successfully dropped old unique index.');
-        } catch (e) {
-            // Index might not exist, which is fine
-        }
 
-        // 📡 Real-time Database Watchers (Change Streams)
-        const logChangeStream = mongoose.connection.collection('logs').watch();
-        logChangeStream.on('change', (change) => {
+        // Enable Real-time synchronization via Change Streams
+        // This allows logs and notifications from other services (like User Data API) to appear instantly.
+        const logsCollection = mongoose.connection.db.collection('logs');
+        const logsStream = logsCollection.watch();
+        
+        logsStream.on('change', (change) => {
             if (change.operationType === 'insert') {
                 const newLog = change.fullDocument;
+                console.log(`📡 Real-time Sync: New ${newLog.status} attempt logged from ${newLog.origin}`);
                 if (newLog.organization) {
                     io.to(newLog.organization.toString()).emit('log_received', newLog);
                 }
             }
         });
-        logChangeStream.on('error', (err) => console.error('📡 Log Stream Error:', err.message));
 
-        const notificationChangeStream = mongoose.connection.collection('notifications').watch();
-        notificationChangeStream.on('change', (change) => {
+        const notifCollection = mongoose.connection.db.collection('notifications');
+        const notifStream = notifCollection.watch();
+        
+        notifStream.on('change', (change) => {
             if (change.operationType === 'insert') {
                 const newNotif = change.fullDocument;
+                console.log(`🔔 Real-time Sync: New ${newNotif.type} notification emitted: ${newNotif.title}`);
                 if (newNotif.organization) {
                     io.to(newNotif.organization.toString()).emit('notification_received', newNotif);
                 }
             }
         });
-        notificationChangeStream.on('error', (err) => console.error('📡 Notif Stream Error:', err.message));
 
-        console.log('📡 Real-time Database Watchers operational.');
+        console.log('👀 Security change streams active and watching for infrastructure events...');
 
     } catch (err) {
         console.error('🚨 MongoDB Connection Failure:', err.message);
+        // Don't exit process in dev, maybe it's just a temporary network blip or IP whitelist issue
+        console.log('⚠️ Running in degraded mode: Some database-dependent features may fail.');
     }
 };
 
 connectDB();
 
-// Routes
+mongoose.connection.on('disconnected', () => {
+    console.log('🔌 MongoDB disconnected. Attempting to reconnect...');
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('❌ MongoDB error:', err);
+});
+
+// Attach IO to request for controllers
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
+
+// Basic Route
 app.get('/', (req, res) => {
     res.json({ status: 'active', version: '1.2.0', service: 'CORSGuard-Engine' });
 });
 
+// Import Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/inventory', require('./routes/apiRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));

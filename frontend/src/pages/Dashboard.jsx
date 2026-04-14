@@ -96,7 +96,7 @@ const Dashboard = () => {
                     id: log._id,
                     api: log.apiEndpoint || 'Unknown',
                     origin: log.origin || 'Unknown',
-                    method: 'GET',
+                    method: log.method || 'GET',
                     status: log.status,
                     time: new Date(log.timestamp).toLocaleTimeString()
                 })));
@@ -131,7 +131,7 @@ const Dashboard = () => {
                 id: newLog._id,
                 api: newLog.apiEndpoint || 'Unknown',
                 origin: newLog.origin || 'Unknown',
-                method: 'GET',
+                method: newLog.method || 'GET',
                 status: newLog.status,
                 time: new Date(newLog.timestamp).toLocaleTimeString()
             }, ...prev].slice(0, 5));

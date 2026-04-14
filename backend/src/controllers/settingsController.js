@@ -142,3 +142,36 @@ exports.generateInviteLink = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+
+exports.rotateApiKey = async (req, res) => {
+    try {
+        const Organization = require('../models/Organization');
+        const newKey = `sk_live_${crypto.randomBytes(16).toString('hex')}`;
+        
+        const org = await Organization.findByIdAndUpdate(
+            req.user.organization,
+            { apiKey: newKey },
+            { new: true }
+        );
+
+        if (!org) {
+            return res.status(404).json({ message: 'Organization not found' });
+        }
+
+        // Broadcast rotation event for logs
+        req.io.to(req.user.organization.toString()).emit('log_received', {
+            organization: req.user.organization,
+            eventType: 'Security Alert',
+            apiEndpoint: 'Identity Vault',
+            origin: 'INTERNAL',
+            method: 'POST',
+            status: 'Authorized',
+            details: 'Master API Key successfully rotated by administrator.',
+            timestamp: new Date()
+        });
+
+        res.json({ apiKey: org.apiKey });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};

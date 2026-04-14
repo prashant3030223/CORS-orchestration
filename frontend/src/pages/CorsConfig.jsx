@@ -94,6 +94,7 @@ const CorsConfig = () => {
         return () => clearTimeout(saveTimeout.current);
     }, [origins, deniedOrigins, selectedMethods, allowCredentials, allowAllMethods, selectedApi]);
 
+    // ... helper functions ...
     const addOrigin = (type) => {
         const val = type === 'allowed' ? newOrigin : newDeniedOrigin;
         if (!val) return;
@@ -110,10 +111,12 @@ const CorsConfig = () => {
             if (origins.includes(val)) return;
             setOrigins([...origins, val]);
             setNewOrigin('');
+            // toast.success('Allowed origin staged'); // Autosave handles toast
         } else {
             if (deniedOrigins.includes(val)) return;
             setDeniedOrigins([...deniedOrigins, val]);
             setNewDeniedOrigin('');
+            // toast.success('Blocked origin staged');
         }
     };
 
@@ -123,6 +126,7 @@ const CorsConfig = () => {
         } else {
             setDeniedOrigins(deniedOrigins.filter(o => o !== val));
         }
+        // toast.success('Origin removed from stage');
     };
 
     const toggleMethod = (method) => {
@@ -160,8 +164,7 @@ const CorsConfig = () => {
         } catch (err) {
             setIsDeploying(false);
             toast.dismiss(deployToast);
-            // FIX: Show exact backend error message
-            toast.error(err.response?.data?.message || 'Deployment sequence failed');
+            toast.error('Deployment sequence failed');
         }
     };
 

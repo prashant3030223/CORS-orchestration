@@ -134,33 +134,34 @@ const DashboardLayout = () => {
 
             {/* Sidebar */}
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-transform duration-300 transform lg:static lg:translate-x-0 overflow-y-auto",
+                "fixed inset-y-0 left-0 z-50 w-72 glass-panel transition-transform duration-300 transform lg:static lg:translate-x-0 overflow-y-auto",
                 sidebarOpen ? "translate-x-0" : "-translate-x-full"
             )}>
-                <div className="p-6 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/20">
-                        <Command className="w-6 h-6" />
+                <div className="p-8 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-xl shadow-blue-500/40 neon-glow-blue">
+                        <Command className="w-7 h-7" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">CORSGuard</h1>
-                        <p className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 tracking-widest">Enterprise v1.2</p>
+                        <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white leading-none">CORSGuard</h1>
+                        <p className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 tracking-[0.2em] mt-1 opacity-80">Enterprise v1.2</p>
                     </div>
                 </div>
 
-                <nav className="mt-4 px-4 space-y-1">
-                    {menuItems.map((item) => (
+                <nav className="mt-8 px-5 space-y-2">
+                    {menuItems.map((item, idx) => (
                         <NavLink
                             key={item.path}
                             to={item.path}
                             className={({ isActive }) => cn(
-                                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-bold group text-xs uppercase tracking-tight",
+                                "flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-black group text-[11px] uppercase tracking-wider animate-fade-in",
                                 isActive
-                                    ? "bg-blue-600 text-white shadow-xl shadow-blue-500/20"
-                                    : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white"
+                                    ? "bg-blue-600 text-white shadow-2xl shadow-blue-500/40 neon-glow-blue scale-[1.02]"
+                                    : "text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-white"
                             )}
+                            style={{ animationDelay: `${idx * 50}ms` }}
                             onClick={() => setSidebarOpen(false)}
                         >
-                            <item.icon className={cn("w-5 h-5 flex-shrink-0", location.pathname === item.path ? "text-white" : "group-hover:scale-110 transition-transform")} />
+                            <item.icon className={cn("w-5 h-5 flex-shrink-0 transition-all duration-300", location.pathname === item.path ? "scale-110" : "group-hover:scale-125")} />
                             <span>{item.name}</span>
                         </NavLink>
                     ))}
@@ -178,9 +179,9 @@ const DashboardLayout = () => {
             </aside>
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden relative">
                 {/* Top Navbar */}
-                <header className="h-20 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 z-30 sticky top-0">
+                <header className="h-24 glass-panel flex items-center justify-between px-8 z-30 sticky top-0 border-t-0 border-x-0">
                     <div className="flex items-center gap-4">
                         <button
                             className="p-2.5 lg:hidden text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-transparent hover:border-slate-200 transition-all"
@@ -191,84 +192,98 @@ const DashboardLayout = () => {
 
                         {/* Universal Search Bar */}
                         <div className="relative hidden md:block">
-                            <div className="flex items-center bg-white/5 dark:bg-slate-900/40 backdrop-blur-2xl rounded-2xl px-4 py-2.5 w-[450px] group transition-all duration-500 border border-white/10 dark:border-slate-700/50 hover:border-blue-500/30 focus-within:border-blue-500/50 shadow-[0_0_20px_rgba(0,0,0,0.1)] dark:shadow-[0_0_30px_rgba(59,130,246,0.08)] relative overflow-hidden">
-                                {/* Ambient Glow Background */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-
+                            <div className="flex items-center bg-white/40 dark:bg-slate-950/40 backdrop-blur-md rounded-2xl px-6 py-4 w-[550px] group transition-all duration-500 border border-white/20 dark:border-slate-800/50 focus-within:border-blue-500/50 focus-within:neon-glow-blue focus-within:scale-[1.02] relative overflow-hidden">
+                                {/* Radiant Background Pulse */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/[0.03] to-blue-500/0 translate-x-[-100%] group-focus-within:translate-x-[100%] transition-transform duration-1000 ease-in-out" />
+                                
+                                <Search className={cn(
+                                    "w-5 h-5 transition-all duration-300 relative z-10",
+                                    searchQuery ? "text-blue-500 scale-110" : "text-slate-400 group-focus-within:text-blue-400"
+                                )} />
+                                
                                 {/* Honeypot to catch browser autofill */}
                                 <input type="text" name="prevent_autofill" style={{ display: 'none' }} tabIndex="-1" />
                                 <input type="password" name="password_fake" style={{ display: 'none' }} tabIndex="-1" />
 
-                                <div className="relative flex items-center gap-3 w-full">
-                                    <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 group-focus-within:border-blue-500/50 group-focus-within:bg-blue-500/10 transition-all duration-300">
-                                        <Search className="w-4 h-4 text-slate-400 group-focus-within:text-blue-500 group-focus-within:scale-110 transition-all" />
-                                    </div>
-
-                                    <form autoComplete="off" onSubmit={(e) => e.preventDefault()} className="w-full">
-                                        <input
-                                            ref={searchInputRef}
-                                            type="text"
-                                            name="q_universal_vault_search"
-                                            autoComplete="new-password"
-                                            readOnly
-                                            onFocus={(e) => e.target.readOnly = false}
-                                            onBlur={(e) => e.target.readOnly = true}
-                                            value={searchQuery}
-                                            onChange={(e) => handleSearch(e.target.value)}
-                                            placeholder="Search documentation, APIs, or settings..."
-                                            className="bg-transparent border-none focus:ring-0 text-sm w-full text-slate-900 dark:text-white placeholder:text-slate-500/50 font-medium tracking-tight"
-                                        />
-                                    </form>
-
-                                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-inner text-[10px] font-black text-slate-400 dark:text-slate-500 group-focus-within:text-blue-500 group-focus-within:border-blue-500/30 transition-all">
-                                        <span className="opacity-60">⌘</span>
-                                        <span>K</span>
-                                    </div>
+                                <form autoComplete="off" onSubmit={(e) => e.preventDefault()} className="w-full relative z-10">
+                                    <input
+                                        ref={searchInputRef}
+                                        type="text"
+                                        name="q_universal_vault_search"
+                                        autoComplete="new-password"
+                                        readOnly
+                                        onFocus={(e) => e.target.readOnly = false}
+                                        onBlur={(e) => e.target.readOnly = true}
+                                        value={searchQuery}
+                                        onChange={(e) => handleSearch(e.target.value)}
+                                        placeholder="Command Center Search..."
+                                        className="bg-transparent border-none focus:ring-0 text-sm ml-4 w-full text-slate-900 dark:text-white placeholder:text-slate-400/50 font-black tracking-tight"
+                                    />
+                                </form>
+                                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/10 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[10px] font-black text-slate-600 dark:text-slate-300 shadow-inner relative z-10">
+                                    <span className="text-xs opacity-60">⌘</span>K
                                 </div>
                             </div>
 
                             {/* Search Results Dropdown */}
                             {showResults && (
-                                <div className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl shadow-blue-500/10 border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-50">
-                                    <div className="p-2">
+                                <div className="absolute top-full left-0 right-0 mt-4 glass-panel rounded-[32px] premium-shadow overflow-hidden animate-in fade-in zoom-in-95 duration-300 z-50 border-white/20 dark:border-white/10">
+                                    {/* Geometric Background Detail */}
+                                    <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+                                    
+                                    <div className="p-3 relative z-10">
                                         {searchResults.length > 0 ? (
                                             <>
-                                                <div className="px-4 py-3 text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                                                    Best Matches
+                                                <div className="px-5 py-4 text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] flex items-center justify-between">
+                                                    Infrastructure Matches
+                                                    <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded-lg text-[9px]">{searchResults.length} found</span>
                                                 </div>
-                                                {searchResults.map((result, idx) => (
-                                                    <button
-                                                        key={idx}
-                                                        onClick={() => executeSearchAction(result)}
-                                                        className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors text-left group"
-                                                    >
-                                                        <div className={cn(
-                                                            "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                                                            result.type === 'navigation' ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600'
-                                                        )}>
-                                                            {result.type === 'navigation' ? <result.icon className="w-5 h-5" /> : <Server className="w-5 h-5" />}
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-sm font-black text-slate-900 dark:text-white">{result.name}</div>
-                                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{result.type}</div>
-                                                        </div>
-                                                        <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <ExternalLink className="w-4 h-4 text-slate-400" />
-                                                        </div>
-                                                    </button>
-                                                ))}
+                                                <div className="space-y-1">
+                                                    {searchResults.map((result, idx) => (
+                                                        <button
+                                                            key={idx}
+                                                            onClick={() => executeSearchAction(result)}
+                                                            className="w-full flex items-center gap-5 p-4 rounded-[20px] hover:bg-blue-500/5 dark:hover:bg-blue-500/10 transition-all text-left group/result animate-fade-in"
+                                                            style={{ animationDelay: `${idx * 40}ms` }}
+                                                        >
+                                                            <div className={cn(
+                                                                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm group-hover/result:scale-110 group-hover/result:rotate-3",
+                                                                result.type === 'navigation' 
+                                                                    ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 group-hover/result:neon-glow-blue' 
+                                                                    : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 group-hover/result:neon-glow-green'
+                                                            )}>
+                                                                {result.type === 'navigation' ? <result.icon className="w-6 h-6" /> : <Server className="w-6 h-6" />}
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <div className="text-sm font-black text-slate-900 dark:text-white group-hover/result:text-blue-500 transition-colors uppercase tracking-tight">{result.name}</div>
+                                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 opacity-60">{result.type} • {result.path}</div>
+                                                            </div>
+                                                            <div className="opacity-0 group-hover/result:opacity-100 transition-all translate-x-2 group-hover/result:translate-x-0">
+                                                                <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+                                                                    <ExternalLink className="w-4 h-4" />
+                                                                </div>
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </>
                                         ) : (
-                                            <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-                                                <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                                <p className="text-xs font-bold">No results found for "{searchQuery}"</p>
+                                            <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+                                                <Search className="w-12 h-12 mx-auto mb-4 opacity-20 animate-pulse" />
+                                                <p className="text-xs font-black uppercase tracking-widest">No infrastructure matches found</p>
+                                                <p className="text-[10px] font-bold mt-2 opacity-50">Refine your query for deeper vault scanning</p>
                                             </div>
                                         )}
                                     </div>
-                                    <div className="bg-slate-50 dark:bg-slate-950/50 p-3 text-center border-t border-slate-100 dark:border-slate-800">
-                                        <p className="text-[10px] font-medium text-slate-400">
-                                            Press <span className="font-bold text-slate-500 dark:text-slate-300">Enter</span> to select • <span className="font-bold text-slate-500 dark:text-slate-300">Esc</span> to close
-                                        </p>
+                                    <div className="bg-slate-50/50 dark:bg-slate-950/50 p-4 text-center border-t border-slate-100 dark:border-slate-800 relative z-10">
+                                        <div className="flex items-center justify-center gap-6">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                <span className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 rounded">ENT</span> SELECT
+                                            </p>
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                <span className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 rounded">ESC</span> CLOSE
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -338,8 +353,8 @@ const DashboardLayout = () => {
                 </header>
 
                 {/* Dynamic Content */}
-                <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50 dark:bg-slate-950/50">
-                    <div className="max-w-7xl mx-auto">
+                <main className="flex-1 overflow-y-auto p-6 md:p-10 bg-transparent relative">
+                    <div className="max-w-7xl mx-auto animate-fade-in delay-200">
                         <Outlet />
                     </div>
                 </main>

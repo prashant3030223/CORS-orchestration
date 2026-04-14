@@ -6,30 +6,20 @@ const Notification = require('../models/Notification');
 const dynamicCorsMiddleware = async (req, res, next) => {
     const origin = req.headers.origin;
     const isInternalApi = req.path.startsWith('/api');
+    const isDashboard = origin === process.env.CLIENT_URL;
 
-    // 1. Allow non-browser requests (no origin)
+    // 1. Allow non-browser requests (no origin) - optional, strictly secure systems might block this.
     if (!origin) {
         return next();
     }
 
-    // MANDATORY: Always allow production URLs (Netlify, Vercel, and Local)
-    const normalizedOrigin = (origin || '').replace(/\/$/, '');
-    const isAllowed = 
-        (process.env.CLIENT_URL && process.env.CLIENT_URL.replace(/\/$/, '') === normalizedOrigin) ||
-        normalizedOrigin === 'https://cors-orchestration.netlify.app' ||
-        normalizedOrigin === 'https://cors-orchestration.vercel.app' ||
-        normalizedOrigin === 'http://localhost:5173' ||
-        normalizedOrigin.endsWith('.netlify.app') ||
-        normalizedOrigin.endsWith('.vercel.app');
-
-    if (isAllowed) {
+    // MANDATORY: Always allow the Dashboard URL to ensure management is possible even if DB is empty
+    if (process.env.CLIENT_URL && (origin === process.env.CLIENT_URL || origin.replace(/\/$/, '') === process.env.CLIENT_URL.replace(/\/$/, ''))) {
         res.header('Access-Control-Allow-Origin', origin);
         res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, x-org-id, Accept, Origin, X-Requested-With');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, x-org-id');
         res.header('Access-Control-Allow-Credentials', 'true');
-        if (req.method === 'OPTIONS') {
-            return res.status(204).send();
-        }
+        if (req.method === 'OPTIONS') return res.status(200).end();
         return next();
     }
 
@@ -55,7 +45,7 @@ const dynamicCorsMiddleware = async (req, res, next) => {
         const normalizeOrigin = (url) => url ? url.replace(/\/$/, '') : '';
         const normOrigin = normalizeOrigin(origin);
 
-        // 1. GLOBAL BLACKLIST CHECK
+        // 1. GLOBAL BLACKLIST CHECK (Highest Priority)
         const isBlacklistedGlobally = policies.some(policy =>
             policy.blacklistedOrigins && policy.blacklistedOrigins.some(blocked => {
                 const normBlocked = normalizeOrigin(blocked);
@@ -73,32 +63,20 @@ const dynamicCorsMiddleware = async (req, res, next) => {
 
         if (isBlacklistedGlobally) {
             console.log(`🚫 CORS Blocked (Blacklisted) for origin: ${origin}`);
-            const potentialOrg = policies.find(p => p.blacklistedOrigins.some(b => normalizeOrigin(b) === normOrigin || (normalizeOrigin(b).startsWith('*.') && origin.endsWith(normalizeOrigin(b).slice(2)))))?.organization || (policies.length > 0 ? policies[0].organization : null);
-            
-            if (potentialOrg) {
-                Log.create({
-                    organization: potentialOrg,
-                    eventType: 'Security Alert',
-                    apiEndpoint: req.path,
-                    origin: origin,
-                    method: req.method,
-                    status: 'Blocked',
-                    severity: 'High',
-                    details: 'Origin is explicitly blacklisted in security policy.'
-                }).catch(err => console.error('Blacklist log failed', err));
-
-                Notification.create({
-                    organization: potentialOrg,
-                    type: 'security',
-                    title: 'Blacklisted Origin Blocked',
-                    message: `A known malicious origin (${origin}) attempted to access your API and was blocked.`,
-                    priority: 'High'
-                }).catch(err => console.error('Blacklist notification failed', err));
-            }
             return res.status(403).json({ error: 'CORS Blocked: Origin is blacklisted' });
         }
 
-        // 2. Find a matching Allow Policy
+        // 2. MANDATORY DASHBOARD ALLOW (Fallback/Safe Default)
+        if (process.env.CLIENT_URL && (normOrigin === normalizeOrigin(process.env.CLIENT_URL))) {
+            res.header('Access-Control-Allow-Origin', origin);
+            res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+            res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key');
+            res.header('Access-Control-Allow-Credentials', 'true');
+            if (req.method === 'OPTIONS') return res.status(200).end();
+            return next();
+        }
+
+        // 3. Find a matching Allow Policy (Standard Flow)
         const matchedPolicy = policies.find(policy => {
             return policy.allowedOrigins.some(allowed => {
                 const normAllowed = normalizeOrigin(allowed);
@@ -116,35 +94,49 @@ const dynamicCorsMiddleware = async (req, res, next) => {
 
         if (matchedPolicy) {
             res.header('Access-Control-Allow-Origin', origin);
+
+            // Handle Wildcard Methods
             const methods = (matchedPolicy.allowedMethods && matchedPolicy.allowedMethods.length > 0)
                 ? (matchedPolicy.allowedMethods.includes('*') ? 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD' : matchedPolicy.allowedMethods.join(', '))
                 : 'GET, POST';
             res.header('Access-Control-Allow-Methods', methods);
 
+            // Handle Headers - provide defaults if empty
             const headers = (matchedPolicy.allowedHeaders && matchedPolicy.allowedHeaders.length > 0)
                 ? matchedPolicy.allowedHeaders.join(', ')
                 : 'Content-Type, Authorization, x-api-key';
             res.header('Access-Control-Allow-Headers', headers);
 
             if (matchedPolicy.allowCredentials) res.header('Access-Control-Allow-Credentials', 'true');
-            if (req.method === 'OPTIONS') return res.status(204).send();
+            if (req.method === 'OPTIONS') return res.status(200).end();
 
             // Log Access
-            if (!isInternalApi || (origin !== process.env.CLIENT_URL)) {
-                Log.create({
-                    organization: matchedPolicy.organization,
-                    eventType: 'CORS Access',
-                    apiEndpoint: matchedPolicy.name,
-                    origin: origin,
-                    method: req.method,
-                    status: 'Allowed',
-                    details: `Request allowed by policy: ${matchedPolicy.name}`
-                }).catch(err => console.error('Logging failed', err));
-            }
+            Log.create({
+                organization: matchedPolicy.organization,
+                eventType: 'CORS Access',
+                apiEndpoint: matchedPolicy.name,
+                origin: origin,
+                method: req.method,
+                status: 'Allowed',
+                details: `Request allowed by policy: ${matchedPolicy.name}`
+            }).then(newLog => {
+                if (req.io) req.io.to(matchedPolicy.organization.toString()).emit('log_received', newLog);
+            }).catch(err => console.error('Logging failed', err));
+
+            // Create notification for Allowed access (Visibility improvement)
+            Notification.create({
+                organization: matchedPolicy.organization,
+                type: 'policy',
+                title: 'Authorized Access',
+                message: `Request from ${origin} successfully authorized by policy: ${matchedPolicy.name} via ${req.method}`,
+                priority: 'Low'
+            }).then(newNotif => {
+                if (req.io) req.io.to(matchedPolicy.organization.toString()).emit('notification_received', newNotif);
+            }).catch(err => console.error('Allowed notification failed', err));
         } else {
             // Log Blocked Attempt
             const potentialOrg = policies.length > 0 ? policies[0].organization : null;
-            if (potentialOrg && (!isInternalApi || origin !== process.env.CLIENT_URL)) {
+            if (potentialOrg) {
                 Log.create({
                     organization: potentialOrg,
                     eventType: 'Security Alert',
@@ -153,14 +145,19 @@ const dynamicCorsMiddleware = async (req, res, next) => {
                     method: req.method,
                     status: 'Blocked',
                     details: 'Unauthorized cross-origin access attempt blocked by policy.'
+                }).then(newLog => {
+                    if (req.io) req.io.to(potentialOrg.toString()).emit('log_received', newLog);
                 }).catch(err => console.error('Blocked log failed', err));
 
+                // Create persistent Security Alert Notification
                 Notification.create({
                     organization: potentialOrg,
                     type: 'security',
                     title: 'Security Threat Blocked',
                     message: `Unauthorized cross-origin attempt from ${origin} was intercepted.`,
                     priority: 'High'
+                }).then(newNotif => {
+                    if (req.io) req.io.to(potentialOrg.toString()).emit('notification_received', newNotif);
                 }).catch(err => console.error('Blocked notification failed', err));
             }
         }

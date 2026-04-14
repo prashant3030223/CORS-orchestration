@@ -13,9 +13,9 @@ const corsPolicySchema = new mongoose.Schema({
     isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
-// NO LONGER UNIQUE: Allow multiple policies per name/org to prevent E11000 errors
-corsPolicySchema.index({ organization: 1, name: 1 });
-// Fast lookup for active policies in MongoDB
+// Ensure unique policy name per organization
+corsPolicySchema.index({ organization: 1, name: 1 }, { unique: true });
+// Fast lookup for active policies
 corsPolicySchema.index({ isActive: 1 });
 
 module.exports = mongoose.model('CorsPolicy', corsPolicySchema);
