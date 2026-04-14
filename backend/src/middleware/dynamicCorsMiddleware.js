@@ -6,7 +6,6 @@ const Notification = require('../models/Notification');
 const dynamicCorsMiddleware = async (req, res, next) => {
     const origin = req.headers.origin;
     const isInternalApi = req.path.startsWith('/api');
-    const isDashboard = origin === process.env.CLIENT_URL;
 
     // 1. Allow non-browser requests (no origin) - optional, strictly secure systems might block this.
     if (!origin) {
