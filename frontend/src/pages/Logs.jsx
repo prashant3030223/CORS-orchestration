@@ -144,7 +144,7 @@ const Logs = () => {
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-slate-50/50 dark:bg-slate-950/30 text-[10px] uppercase tracking-[0.2em] font-black text-slate-400">
+                        <thead className="bg-slate-50/50 dark:bg-slate-950/50 text-[10px] uppercase tracking-[0.2em] font-black text-slate-400 dark:text-slate-200">
                             <tr>
                                 <th className="px-10 py-6">Event Lifecycle</th>
                                 <th className="px-10 py-6">Type</th>
@@ -160,9 +160,9 @@ const Logs = () => {
                             {filteredLogs.map((log) => (
                                 <tr key={log._id} className="group hover:bg-blue-500/[0.02] dark:hover:bg-blue-500/[0.03] transition-colors">
                                     <td className="px-10 py-8">
-                                        <div className="flex items-center gap-4 text-[11px] font-black text-slate-500 dark:text-slate-400 tabular-nums">
-                                            <div className="p-2 bg-slate-100 dark:bg-slate-800/50 rounded-xl">
-                                                <Clock className="w-4 h-4" />
+                                        <div className="flex items-center gap-4 text-[11px] font-black text-slate-600 dark:text-slate-300 tabular-nums">
+                                            <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                                                <Clock className="w-4 h-4 text-blue-500" />
                                             </div>
                                             {new Date(log.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'medium' })}
                                         </div>
@@ -171,29 +171,29 @@ const Logs = () => {
                                         <div className="font-black text-sm text-slate-900 dark:text-white uppercase tracking-tight">{log.eventType}</div>
                                     </td>
                                     <td className="px-10 py-8">
-                                        <code className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-4 py-2 rounded-2xl border border-blue-100 dark:border-blue-500/10">{log.origin || 'INTERNAL'}</code>
+                                        <code className="text-[10px] font-black text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-500/20 px-4 py-2 rounded-2xl border border-blue-100 dark:border-blue-500/20">{log.origin || 'INTERNAL'}</code>
                                     </td>
                                     <td className="px-10 py-8">
-                                        <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl uppercase tracking-wider">{log.method || 'N/A'}</span>
+                                        <span className="text-[10px] font-black text-slate-700 dark:text-white bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-xl uppercase tracking-wider border border-slate-300/30 dark:border-white/5">{log.method || 'N/A'}</span>
                                     </td>
                                     <td className="px-10 py-8">
-                                        <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-xl">{log.apiEndpoint || 'N/A'}</span>
+                                        <span className="text-[10px] font-black text-slate-700 dark:text-white bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-300/30 dark:border-white/5">{log.apiEndpoint || 'N/A'}</span>
                                     </td>
                                     <td className="px-10 py-8">
                                         <span className={cn(
-                                            "inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
+                                            "inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-sm",
                                             log.status === 'Allowed'
-                                                ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/50 neon-glow-green'
+                                                ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 neon-glow-green'
                                                 : log.status === 'Blocked'
-                                                    ? 'text-rose-600 bg-rose-50 dark:bg-rose-500/10 border border-rose-200/50 neon-glow-red'
-                                                    : 'text-amber-600 bg-amber-50 dark:bg-amber-500/10 border border-amber-200/50'
+                                                    ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 neon-glow-red'
+                                                    : 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20'
                                         )}>
                                             {log.status === 'Allowed' ? <ShieldCheck className="w-4.5 h-4.5" /> : <ShieldAlert className="w-4.5 h-4.5" />}
                                             {log.status}
                                         </span>
                                     </td>
                                     <td className="px-10 py-8">
-                                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 italic opacity-80">{log.details}</span>
+                                        <span className="text-[11px] font-medium text-slate-600 dark:text-slate-200 opacity-90">{log.details}</span>
                                     </td>
                                     <td className="px-10 py-8 text-right pr-14">
                                         <button
