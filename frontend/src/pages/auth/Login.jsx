@@ -3,7 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Shield, Eye, EyeOff, Mail, Lock, ArrowRight, Github } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../utils/cn';
+import api from '../../services/api';
 import toast from 'react-hot-toast';
+
 
 const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -24,20 +26,8 @@ const Login = () => {
         const loadingToast = toast.loading('Authenticating...');
 
         try {
-            // Real API call
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5002/api'}/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Login failed');
-            }
+            // Use the axios api service instead of direct fetch
+            const { data } = await api.post('/auth/login', { email, password });
 
             // Save token and user info
             localStorage.setItem('token', data.token);

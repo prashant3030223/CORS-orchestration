@@ -3,7 +3,9 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Shield, Eye, EyeOff, Mail, Lock, User, ArrowRight, Check, Users } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../utils/cn';
+import api from '../../services/api';
 import toast from 'react-hot-toast';
+
 
 const Register = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -31,9 +33,8 @@ const Register = () => {
                 setIsVerifyingInvite(true);
                 try {
                     const tokenToVerify = inviteCode || inviteToken;
-                    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5002/api'}/auth/invite/verify/${tokenToVerify}`);
-                    const data = await response.json();
-                    if (response.ok) {
+                    const response = await api.get(`/auth/invite/verify/${tokenToVerify}`);
+                    const data = response.data;
                         setInviteData(data);
                         setFormData(prev => ({
                             ...prev,
@@ -69,24 +70,11 @@ const Register = () => {
         setIsLoading(true);
         const loadingToast = toast.loading('Initializing enterprise account...');
 
-        try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5002/api'}/auth/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    inviteToken: inviteToken,
-                    inviteCode: inviteCode
-                }),
+            const { data } = await api.post('/auth/register', {
+                ...formData,
+                inviteToken: inviteToken,
+                inviteCode: inviteCode
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Registration failed');
-            }
 
             // Auto login after registration
             localStorage.setItem('token', data.token);
