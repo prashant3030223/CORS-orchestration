@@ -41,9 +41,6 @@ const Register = () => {
                             companyName: data.organizationName,
                             role: data.role
                         }));
-                    } else {
-                        toast.error('Invite link invalid or expired');
-                    }
                 } catch (err) {
                     toast.error('Security verification failed');
                 } finally {
@@ -70,6 +67,7 @@ const Register = () => {
         setIsLoading(true);
         const loadingToast = toast.loading('Initializing enterprise account...');
 
+        try {
             const { data } = await api.post('/auth/register', {
                 ...formData,
                 inviteToken: inviteToken,
