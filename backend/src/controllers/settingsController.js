@@ -135,7 +135,8 @@ exports.generateInviteLink = async (req, res) => {
             inviter: req.user.name
         });
 
-        const inviteLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/register?code=${code}`;
+        const frontendUrl = process.env.CLIENT_URL || 'https://cors-orchestration.netlify.app';
+        const inviteLink = `${frontendUrl}/register?code=${code}`;
 
         res.json({ inviteLink });
     } catch (err) {
